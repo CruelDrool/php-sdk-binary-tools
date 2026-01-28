@@ -93,7 +93,7 @@ class MariaDB extends Server implements DB
 		$host = $this->conf->getSectionItem($this->name, "host");
 		$port = $this->conf->getSectionItem($this->name, "port");
 
-		$cmd = sprintf(".\\bin\\mysqladmin.exe --host=$host --port=$port -u $user %s--shutdown_timeout=0 shutdown", ($pass ? "-p$pass " : ""));
+		$cmd = sprintf(".\\bin\\mysqladmin.exe --no-defaults --host=$host --port=$port -u $user %s--shutdown_timeout=0 shutdown", ($pass ? "-p$pass " : ""));
 		exec($cmd);
 
 		if ($force) {
@@ -121,8 +121,8 @@ class MariaDB extends Server implements DB
 
 		$pass_arg = $pass ? "-p$pass " : "";
 		$db_arg = $db ? "-D $db" : "";
-		shell_exec(".\\bin\\mysql.exe -u $user $pass_arg -h $host -P $port $db_arg -e \"$s\"");
-		//var_dump($this->base, getcwd(), ".\\bin\\mysql.exe -u $user $pass_arg -h $host -P $port -e \"$s\"");
+		shell_exec(".\\bin\\mysql.exe --no-defaults -u $user $pass_arg -h $host -P $port $db_arg -e \"$s\"");
+		//var_dump($this->base, getcwd(), ".\\bin\\mysql.exe --no-defaults -u $user $pass_arg -h $host -P $port -e \"$s\"");
 
 		chdir($cwd);
 	}
@@ -142,7 +142,7 @@ class MariaDB extends Server implements DB
 
 		$pass_arg = $pass ? "-p$pass " : "";
 		$db_arg = $db ? "-D $db" : "";
-		shell_exec(".\\bin\\mysql.exe -u $user $pass_arg -h $host -P $port $db_arg < \"$path\"");
+		shell_exec(".\\bin\\mysql.exe --no-defaults -u $user $pass_arg -h $host -P $port $db_arg < \"$path\"");
 
 		chdir($cwd);
 	}
