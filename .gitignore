@@ -24,3 +24,4 @@ pgo/work
 !pgo/tpl/php
 !lib/php/libsdk/SDK/Build/PGO/Server/PHP
 *.swp
+instantclient
