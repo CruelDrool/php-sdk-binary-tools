@@ -28,19 +28,7 @@ if ""=="%PHP_SDK_VS:~2%" (
 	goto malformed_vc_string
 )
 set /a TMP_CHK=%PHP_SDK_VS:~2%
-if 14 gtr %TMP_CHK% (
-	if "0"=="%TMP_CHK%" (
-		if not "0"=="%PHP_SDK_VS:~2%" (
-			set TMP_CHK=
-			goto malformed_vc_string
-		)
-	)
 
-	echo At least vc14 is required
-	set PHP_SDK_VS=
-	set TMP_CHK=
-	goto out_error
-)
 set PHP_SDK_VS_NUM=%TMP_CHK%
 set TMP_CHK=
 
@@ -191,7 +179,12 @@ if /i "%PHP_SDK_ARCH%"=="x64" (
 )
 
 if /i "%PHP_SDK_OS_ARCH%"=="x64" (
-	set HOST_ARCH_NAME=amd64
+	if 14 gtr %PHP_SDK_VS_NUM% (
+		REM Cross-tools
+		set HOST_ARCH_NAME=x86
+	) else (
+		set HOST_ARCH_NAME=amd64
+	)
 ) else (
 	set HOST_ARCH_NAME=%PHP_SDK_ARCH%
 )
