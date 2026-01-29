@@ -25,6 +25,9 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 
 	/** @var int */
 	protected $max_runs = 4;
+	
+	/** @var string */
+	protected $cmd_path_arg;
 
 	public function __construct(Config $conf, ?Interfaces\Server $nginx, ?Interfaces\Server\DB $maria)
 	{
@@ -37,6 +40,7 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 		$this->nginx = $nginx;
 		$this->maria = $maria;
 		$this->php = $nginx->getPhp();
+		$this->cmd_path_arg = "--path=" . $this->base;
 	}
 
 	public function getName() : string
@@ -56,16 +60,7 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 
 	protected function setupDist() : void
 	{
-		$cmd_path_arg = "--path=" . $this->base;
 
-		if (!is_dir($this->base)) {
-			echo "Setting up " . $this->getName() . " in '{$this->base}'\n";
-			/* XXX Use host PHP for this. */
-			$php = new PHP\CLI($this->conf);
-			$php->exec($this->getToolFn() . " core download --force $cmd_path_arg");
-			unset($php);
-		}
-		
 		$http_port = $this->getHttpPort();
 		$http_host = $this->getHttpHost();
 		$db_port = $this->getDbPort();
@@ -77,8 +72,7 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 			$this->conf->buildTplVarName($this->getName(), "docroot") => str_replace("\\", "/", $this->base),
 		);
 		$tpl_fn = $this->conf->getCasesTplDir($this->getName()) . DIRECTORY_SEPARATOR . "nginx.partial.conf";
-		$this->nginx->addServer($tpl_fn, $vars);
-
+		$this->nginx->addServer($tpl_fn, $vars);		
 
 		$php = new PHP\CLI($this->conf);
 
@@ -92,7 +86,7 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 			"PATH" => $this->conf->getSrvDir(strtolower($this->maria->getName())) . DIRECTORY_SEPARATOR . "bin",
 		);
 
-		$cmd = $this->getToolFn() . " core config --force --dbname=" . $this->getName() . " --dbuser=$db_user --dbpass=$db_pass --dbhost=$db_host:$db_port $cmd_path_arg";
+		$cmd = $this->getToolFn() . " core config --force --dbname=" . $this->getName() . " --dbuser=$db_user --dbpass=$db_pass --dbhost=$db_host:$db_port {$this->cmd_path_arg}";
 		$php->exec($cmd, NULL, $env);
 
 		$site_adm = trim(shell_exec("pwgen -1 -s 8"));
@@ -101,13 +95,13 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 		$this->conf->setSectionItem($this->getName(), "site_admin_pass", $site_pw);
 		//save admin user and pass to config
 		//$cmd = $this->getToolFn() . " core install --url=$http_host:$http_port --title=hello --admin_user=$site_adm_user --admin_password=$site_adm_pw --admin_email=a@bc.de --skip-email --path=" . $this->base;
-		$cmd = $this->getToolFn() . " core install --url=$http_host:$http_port --title=hello --admin_user=$site_adm --admin_password=$site_pw --admin_email=ostc@test.abc --skip-email $cmd_path_arg";
+		$cmd = $this->getToolFn() . " core install --url=$http_host:$http_port --title=hello --admin_user=$site_adm --admin_password=$site_pw --admin_email=ostc@test.abc --skip-email {$this->cmd_path_arg}";
 		$php->exec($cmd, NULL, $env);
 
-		$cmd = $this->getToolFn() . " plugin install wordpress-importer --activate --allow-root $cmd_path_arg";
+		$cmd = $this->getToolFn() . " plugin install wordpress-importer --activate --allow-root {$this->cmd_path_arg}";
 		$php->exec($cmd, NULL, $env);
 
-		$cmd = $this->getToolFn() . " import " . $this->conf->getToolSDir() . DIRECTORY_SEPARATOR . "wptest/wptest.xml --authors=create --allow-root $cmd_path_arg";
+		$cmd = $this->getToolFn() . " import " . $this->conf->getToolSDir() . DIRECTORY_SEPARATOR . "wptest/wptest.xml --authors=create --allow-root {$this->cmd_path_arg}";
 		$php->exec($cmd, NULL, $env);
 
 		$this->nginx->down(true);
@@ -151,6 +145,20 @@ class TrainingCaseHandler extends Abstracts\TrainingCase implements Interfaces\T
 		$pw->fetch($url, $this->getToolFn(), $force);
 		$url = $this->conf->getSectionItem($this->getName(), "wptest_zip_url");
 		$pw->fetchAndUnzip($url, "wptest.zip", $this->conf->getToolSDir(), "wptest", $force);
+
+		if ( $force || !is_dir($this->base) ) {
+			$php = new PHP\CLI($this->conf);
+
+			if ( is_dir($this->base) ) {
+				$suffix = date("YmdHi");
+				rename($this->base, "{$this->base}.$suffix");
+			}
+
+			echo "Setting up " . $this->getName() . " in '{$this->base}'\n";
+
+			/* XXX Use host PHP for this. */
+			$php->exec($this->getToolFn() . " core download --force {$this->cmd_path_arg}");
+		}
 	}
 
 	public function init() : void
