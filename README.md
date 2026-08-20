@@ -6,9 +6,11 @@ PHP SDK is a tool kit for Windows PHP builds.
 
 The PHP SDK itself and the SDK own tools and code are licensed under the BSD 2-Clause license. With the usage of the other tools, you accept the respective licenses.
 
+Required notices for the bundled third-party binaries are listed in [`licenses/README.md`](licenses/README.md).
+
 # Overview
 
-The toolset consists on a mix of the hand written scripts, selected MSYS2 parts and standalone programs. It supports any workflows, be it a custom, local or a CI build whatsoever.
+The toolset consists on a mix of the handwritten scripts, selected MSYS2 parts and standalone programs. It supports any workflows, be it a custom, local or a CI build whatsoever.
 
 The PHP SDK 2.2+ is compatible with PHP 7.2 and above.
 
@@ -20,11 +22,11 @@ The legacy binary tools SDK is available from the [legacy branch](https://github
 
 - A 64-bit build host
 - Windows 7 or later
-- `Visual C++ 2017` or `Visual C++ 2019` must be installed prior SDK usage. Required components
+- `Visual C++ 2017` or above as per the PHP version must be installed prior SDK usage. Required components
   - C++ dev
   - Windows SDK
   - .NET dev
-- if `Cygwin`, `MingW` or any other cross solution is installed, please read notes in the pitfalls section
+- if `Cygwin`, `MinGW` or any other cross solution is installed, please read notes in the pitfalls section
 
 # Tools
 
@@ -34,13 +36,14 @@ The legacy binary tools SDK is available from the [legacy branch](https://github
 - `phpsdk_buildtree` - initialize the development filesystem structure
 - `phpsdk_deps`      - handle dependency libraries
 - `phpsdk_dllmap`    - create a JSON listing of DLLs contained in zip files
+- `phpsdk_sbom`      - generate and export compliance files for a PHP binary distribution
 - `phpsdk_pgo`       - run PGO training 
 - `phpsdk_version`   - show SDK version
 - `task.exe`         - wrapper to hide the given command line
 
 ## Other tools
 
-- `bison` 3.3.2, `re2c` 1.1.1, `lemon`
+- `bison` 3.3.2, `re2c` 1.1.1, `lemon`, `jom` 1.1.7
 - `awk`, `gawk`, `sed`, `grep`, `jq`
 - `diff`, `diff3`, `patch`
 - `md5sum`, `sha1sum`, `sha224sum`, `sha256sum`, `sha384sum`, `sha512sum`
@@ -69,11 +72,11 @@ It is not required to hold the source in the PHP SDK directory. It could be usef
 
 - `git clone https://github.com/php/php-sdk-binary-tools.git c:\php-sdk`
 - `cd c:\php-sdk`
-- `git checkout php-sdk-2.1.9` or later
-- invoke `phpsdk-vc15-x64.bat`
+- `git checkout php-sdk-2.8.2` or later
+- invoke `phpsdk-vs17-x64.bat`
 - `phpsdk_buildtree phpmaster`
 - `git clone https://github.com/php/php-src.git && cd php-src`, or fetch a zipball
-- `phpsdk_deps --update --branch master`, use `phpsdk_deps --update --branch X.Y` for a non master branch
+- `phpsdk_deps --update --branch master`, use `phpsdk_deps --update --branch X.Y` for a non-master branch
 - do the build, eg. `buildconf && configure --enable-cli && nmake`
 
 More extensive documentation can be found on the [wiki](https://wiki.php.net/internals/windows/stepbystepbuild_sdk_2 "PHP wiki page").
@@ -93,7 +96,7 @@ A script called phpsdk-local.bat has to be put into the PHP SDK root. If present
 
 The starter scripts can be also easy integrated with the consoles other than standard cmd.exe. For the reference, here's an example ConEmu task
 
-`C:\php-sdk\phpsdk-vc15-x64.bat -cur_console:d:C:\php-sdk\php72\vc15\x64\php-src`
+`C:\php-sdk\phpsdk-vs17-x64.bat -cur_console:d:C:\php-sdk\php85\vs17\x64\php-src`
 
 ## Unattended builds
 
@@ -147,6 +150,22 @@ After a training case is implemented and put under `pgo/cases`, the work environ
 
 To skip a training case, add a file named `inactive` into the case folder.
 
+# SBOM
+
+The `phpsdk_sbom` tool can be used to add SBOM documents to a completed PHP
+Windows binary archive.
+
+`phpsdk_sbom --package <php-source-dir> <php-build-dir> <php-archive> <php-sbom-metadata>`
+merges the dependency SBOM documents found in `<php-build-dir>\share\sbom` with
+the libraries bundled in the PHP sources. The generated CycloneDX, SPDX and
+OpenVEX documents are added under `extras\sbom` in the archive. The metadata
+file is expected to contain the PHP license and the bundled library information.
+
+`phpsdk_sbom --export <php-archive>` creates artifact-specific CycloneDX, SPDX
+and OpenVEX sidecars next to the archive. These sidecars include the archive
+file name, download location, build configuration and SHA-256 checksum. The
+OpenVEX sidecar is only created when the archive contains OpenVEX statements.
+
 # Debugging PHP
 
 This part covers debugging possibilities for the builds produced by the native VS compilers.
@@ -190,7 +209,6 @@ previously.
 
 # Support
 
-- Join `#winphp-dev` on Freenode to discuss any ideas or questions
 - File an issue on GitHub
 
 # Pitfalls
@@ -212,7 +230,7 @@ previously.
 ## Releases
 
 Users of the PHP SDK are supposed to use tagged versions for stability and
-reproducability.  This requires the maintainers of the PHP SDK to create such
+reproducibility.  This requires the maintainers of the PHP SDK to create such
 tags for *all* *relevant* *changes*.  The tag format should be `php-sdk-X.Y.Z`,
 with the common major, minor and revision numbers.
 
@@ -227,4 +245,3 @@ available update, ideally in form of a pull request.  These repositories are:
 
 * https://github.com/php/php-src (for Windows CI)
 * https://github.com/php/php-windows-builder
-* https://github.com/php/setup-php-sdk

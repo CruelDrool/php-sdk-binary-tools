@@ -212,11 +212,6 @@ class Config
 		$branch = NULL;
 		$found = false;
 
-		$rmtools_branch = getenv("PHP_RMTOOLS_PHP_BUILD_BRANCH");
-		if ("master" == $rmtools_branch) {
-			return "master";
-		}
-
 		/* Try to figure out the branch. The worky scenarios are
 			- CWD is in php-src
 			- phpize is on the path
@@ -251,11 +246,11 @@ class Config
 			/* Verify that we use an available branch name. Master has some
 				version, but no dedicated series. For master, it rather
 				makes sense to use master as branch name. */
-			$git = trim(shell_exec("where git.exe"));
+			$git = trim((string) shell_exec("where git.exe"));
 			if ($git && is_dir(".git")) {
 				$cmd = "\"$git\" branch";
 
-				$ret = trim(shell_exec($cmd));
+				$ret = trim((string) shell_exec($cmd));
 				if (preg_match_all(",\*\s+master,", $ret) > 0) {
 					$branch = "master";
 				}
